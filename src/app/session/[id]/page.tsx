@@ -94,14 +94,20 @@ export default function SessionPage() {
         )}
 
         {followUp && (
-          <div className="mt-4">
+          <div className="mt-4 space-y-3">
             <div className="font-medium">Follow‑up</div>
             <div className="border p-3 rounded bg-gray-50 dark:bg-gray-900 whitespace-pre-wrap">
               {followUp}
             </div>
-            <div className="mt-2 text-sm text-green-600">Round completed (mock).</div>
+            <a
+              href={`/session/${id}/results`}
+              className="inline-block bg-black text-white px-4 py-2 rounded"
+            >
+              View Score
+            </a>
           </div>
         )}
+
       </div>
     </main>
   );
