@@ -1,30 +1,47 @@
 // app/api/submit-code/route.ts
-import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+import { NextRequest, NextResponse } from "next/server";
+
+const JUDGE0_BASE_URL = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true";
+
+export async function POST(req: NextRequest) {
   const { code, language_id, stdin } = await req.json();
 
-  const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
-  const JUDGE0_API_HOST = process.env.JUDGE0_API_HOST;
+  // ✅ Sample test cases (will be dynamic in the future)
+  const testCases = [
+    { input: "-2 1 -3 4 -1 2 1 -5 4", expected: "6" },
+    { input: "1 2 3 4 5", expected: "15" },
+    { input: "-1 -2 -3 -4", expected: "-1" },
+  ];
 
-  if (!JUDGE0_API_KEY || !JUDGE0_API_HOST) {
-    return NextResponse.json({ error: "Missing API key or host" }, { status: 500 });
+  const headers = {
+    "Content-Type": "application/json",
+    "X-RapidAPI-Key": process.env.JUDGE0_API_KEY!,
+    "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+  };
+
+  const results = [];
+
+  for (const testCase of testCases) {
+    const response = await fetch(JUDGE0_BASE_URL, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        source_code: code,
+        language_id,
+        stdin: testCase.input,
+      }),
+    });
+
+    const result = await response.json();
+
+    results.push({
+      input: testCase.input,
+      output: result.stdout?.trim(),
+      expected: testCase.expected,
+      passed: result.stdout?.trim() === testCase.expected,
+    });
   }
 
-  const submissionRes = await fetch(`https://${JUDGE0_API_HOST}/submissions?base64_encoded=false&wait=true`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-RapidAPI-Key": JUDGE0_API_KEY,
-      "X-RapidAPI-Host": JUDGE0_API_HOST,
-    },
-    body: JSON.stringify({
-      source_code: code,
-      language_id,
-      stdin,
-    }),
-  });
-
-  const result = await submissionRes.json();
-  return NextResponse.json(result);
+  return NextResponse.json({ results });
 }

@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.31.3",
+    "@monaco-editor/react": "^4.7.0",
+    "monaco-editor": "^0.52.2",
     "next": "15.4.7",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
