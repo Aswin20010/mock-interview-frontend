@@ -1,5 +1,7 @@
 export const dynamic = "force-dynamic";
 
+import { addAnswer, getSession } from "../../../../../../lib/mockStore";
+
 export async function POST(
   req: Request,
   ctx: { params: Promise<{ id: string }> }
@@ -7,10 +9,14 @@ export async function POST(
   const { id } = await ctx.params;
   const { text } = await req.json().catch(() => ({ text: "" }));
 
-  // naive mock scoring or echo
-  const done = true;
-  const follow_up =
-    "Thanks. Can you quantify the impact with a specific metric (%, time saved, cost reduced, or revenue)?";
+  const s = getSession(id);
+  if (!s) return Response.json({ error: "session_not_found" }, { status: 404 });
 
-  return Response.json({ follow_up, done }, { status: 200 });
+  addAnswer(id, s.current, text);
+
+  // simple follow-up
+  const follow_up =
+    "Thanks! Can you quantify the impact with a specific metric (%, time saved, cost reduced, or revenue)?";
+
+  return Response.json({ follow_up, done: true }, { status: 200 });
 }

@@ -1,24 +1,24 @@
 export const dynamic = "force-dynamic";
 
+import { getSession } from "../../../../../../lib/mockStore";
+import { scoreBehavioral } from "../../../../../../lib/scorer";
+
 export async function GET(
   _req: Request,
   ctx: { params: Promise<{ id: string }> }
 ) {
   const { id } = await ctx.params;
+  const s = getSession(id);
+  if (!s) return Response.json({ error: "session_not_found" }, { status: 404 });
 
-  // 🔮 mock rubric
-  const score = {
-    sessionId: id,
-    rubric: "STAR",
-    star: 0.7,          // 0..1
-    clarity: 0.6,
-    impact: 0.5,
-    final_score: 68,    // 0..100
-    strengths: ["clear actions", "good ownership"],
-    improvements: ["quantify impact", "tighten structure"],
-    summary:
-      "Solid example with clear actions. Add metrics and outcomes to strengthen the Result."
-  };
+  // for now we score the last answer in this session
+  const last = s.answers.at(-1);
+  if (!last || !last.text) {
+    return Response.json({ error: "no_answer" }, { status: 400 });
+  }
 
-  return Response.json(score, { status: 200 });
+  // if the current round is non-behavioral, you could branch later
+  const result = scoreBehavioral(last.text);
+
+  return Response.json({ sessionId: id, rubric: "STAR", ...result }, { status: 200 });
 }
