@@ -1,45 +1,40 @@
-// app/api/submit-code/route.ts
-
+// File: app/api/submit-code/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const JUDGE0_BASE_URL = "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true";
-
 export async function POST(req: NextRequest) {
-  const { code, language_id, stdin } = await req.json();
+  const { code, language_id, sessionId } = await req.json();
 
-  // ✅ Sample test cases (will be dynamic in the future)
-  const testCases = [
-    { input: "-2 1 -3 4 -1 2 1 -5 4", expected: "6" },
-    { input: "1 2 3 4 5", expected: "15" },
-    { input: "-1 -2 -3 -4", expected: "-1" },
-  ];
-
-  const headers = {
-    "Content-Type": "application/json",
-    "X-RapidAPI-Key": process.env.JUDGE0_API_KEY!,
-    "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
-  };
+  // Fetch the question for this session (replace with real DB/API in production)
+  const questionRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/questions-code?sessionId=${sessionId}`);
+  const question = await questionRes.json();
 
   const results = [];
 
-  for (const testCase of testCases) {
-    const response = await fetch(JUDGE0_BASE_URL, {
+  for (const test of question.testCases) {
+    const res = await fetch("https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true", {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        "X-RapidAPI-Key": process.env.JUDGE0_API_KEY!,
+        "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+      },
       body: JSON.stringify({
         source_code: code,
         language_id,
-        stdin: testCase.input,
+        stdin: test.input,
       }),
     });
 
-    const result = await response.json();
+    const judgeRes = await res.json();
+    const stdout = judgeRes.stdout || "";
+    const stderr = judgeRes.stderr || "";
+    const passed = stdout.trim() === test.expectedOutput.trim();
 
     results.push({
-      input: testCase.input,
-      output: result.stdout?.trim(),
-      expected: testCase.expected,
-      passed: result.stdout?.trim() === testCase.expected,
+      input: test.input,
+      expected: test.expectedOutput,
+      output: stdout || stderr,
+      status: passed ? "Passed" : "Failed",
     });
   }
 

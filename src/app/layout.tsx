@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </header>
 
-          <main className="max-w-3xl mx-auto p-4">
+          <main className="w-screen h-screen overflow-x-hidden">
             {children}
           </main>
         </body>
